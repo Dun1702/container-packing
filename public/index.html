@@ -1,0 +1,485 @@
+<!-- index.html - Container Packing Pro v7.0 -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Container Packing Pro - Giải pháp xếp hàng container thông minh</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚛</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- Modern Header -->
+    <header class="glass-header">
+        <div class="header-left">
+            <div class="logo-container">
+                <div class="logo-icon">🚛</div>
+                <div class="logo-text">
+                    <span class="logo-main">CONTAINER</span>
+                    <span class="logo-sub">PACKING PRO</span>
+                </div>
+            </div>
+            <div class="version-tag">v7.0</div>
+        </div>
+        
+        <div class="header-center">
+            <div class="stats-card">
+                <div class="stat-item">
+                    <span class="stat-icon">📦</span>
+                    <span class="stat-value" id="boxCount">0</span>
+                    <span class="stat-label">Thùng</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-icon">📊</span>
+                    <span class="stat-value" id="volumePercent">0</span>
+                    <span class="stat-label">% Thể tích</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-icon">⚖️</span>
+                    <span class="stat-value" id="weightDisplay">0</span>
+                    <span class="stat-label">kg</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="header-right">
+            <button class="icon-btn" id="btnUser" title="Tài khoản">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </button>
+            <button class="icon-btn" id="btnScreenshot" title="Chụp ảnh">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M10 6L12 4H14L16 6"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button class="icon-btn" id="toggleSidebar" title="Thu gọn sidebar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-icon">🔐</div>
+                <h2>Đăng nhập</h2>
+                <p>Đăng nhập để sử dụng đầy đủ tính năng</p>
+            </div>
+            <input type="text" id="loginUsername" class="modal-input" placeholder="Tên đăng nhập hoặc Email">
+            <input type="password" id="loginPassword" class="modal-input" placeholder="Mật khẩu">
+            <div class="modal-buttons">
+                <button id="loginBtn" class="modal-btn primary">Đăng nhập</button>
+                <button id="closeLoginModal" class="modal-btn secondary">Đóng</button>
+            </div>
+            <div class="modal-footer">
+                Chưa có tài khoản? <a id="showRegister">Đăng ký ngay</a><br>
+                <span style="font-size:11px; color:#888;">Demo: admin / 123456</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-icon">📝</div>
+                <h2>Đăng ký</h2>
+                <p>Tạo tài khoản mới</p>
+            </div>
+            <input type="text" id="regFullName" class="modal-input" placeholder="Họ và tên">
+            <input type="text" id="regUsername" class="modal-input" placeholder="Tên đăng nhập">
+            <input type="email" id="regEmail" class="modal-input" placeholder="Email">
+            <input type="password" id="regPassword" class="modal-input" placeholder="Mật khẩu">
+            <div class="modal-buttons">
+                <button id="registerBtn" class="modal-btn primary">Đăng ký</button>
+                <button id="closeRegisterModal" class="modal-btn secondary">Đóng</button>
+            </div>
+            <div class="modal-footer">
+                Đã có tài khoản? <a id="showLogin">Đăng nhập</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Dropdown -->
+    <div id="userDropdown" class="user-dropdown">
+        <div class="user-info">
+            <div class="user-avatar" id="userAvatar"></div>
+            <div class="user-name" id="userName"></div>
+            <div class="user-email" id="userEmail"></div>
+            <div class="user-plan" id="userPlan"></div>
+        </div>
+        <div class="user-menu-items">
+            <div class="user-menu-item logout" id="logoutBtn">
+                <span>🚪</span> Đăng xuất
+            </div>
+        </div>
+    </div>
+
+    <div class="container-app">
+        <!-- Modern Sidebar -->
+        <div class="sidebar modern-sidebar" id="sidebar">
+            <div class="sidebar-scroll">
+                <!-- Container Section -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <div class="section-icon">📦</div>
+                        <h3>CONTAINER</h3>
+                        <div class="section-badge">Cấu hình</div>
+                    </div>
+                    <select id="contType" class="modern-select">
+                        <option value="20dc">20' Standard (235×239×590 cm)</option>
+                        <option value="40dc">40' Standard (235×239×1203 cm)</option>
+                        <option value="40hc" selected>40' High Cube (235×269×1203 cm)</option>
+                        <option value="45hc">45' High Cube (235×269×1350 cm)</option>
+                        <option value="20rf">20' Reefer (229×227×544 cm)</option>
+                        <option value="40rf">40' Reefer (229×227×1158 cm)</option>
+                    </select>
+                    <div class="dimension-group">
+                        <div class="dimension-card">
+                            <label>Rộng (X)</label>
+                            <input type="number" id="cw" value="235" step="1" class="modern-input">
+                            <span class="unit">cm</span>
+                        </div>
+                        <div class="dimension-card">
+                            <label>Cao (Y)</label>
+                            <input type="number" id="ch" value="269" step="1" class="modern-input">
+                            <span class="unit">cm</span>
+                        </div>
+                        <div class="dimension-card">
+                            <label>Dài (Z)</label>
+                            <input type="number" id="cd" value="1203" step="1" class="modern-input">
+                            <span class="unit">cm</span>
+                        </div>
+                    </div>
+                    <div class="container-stats">
+                        <div class="stat-row">
+                            <span>📐 Thể tích</span>
+                            <strong id="containerVolume">0</strong>
+                            <span>m³</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>⚖️ Tải trọng tối đa</span>
+                            <strong id="maxLoad">29,500</strong>
+                            <span>kg</span>
+                        </div>
+                    </div>
+                    <div class="utilization-bars">
+                        <div class="utilization-label">📊 Hiệu suất thể tích</div>
+                        <div class="utilization-bar-container">
+                            <div id="volumeBar" class="utilization-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="utilization-label" style="margin-top: 8px;">⚖️ Hiệu suất tải trọng</div>
+                        <div class="utilization-bar-container">
+                            <div id="weightBar" class="utilization-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Box Type Section -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <div class="section-icon">📦</div>
+                        <h3>THÊM THÙNG HÀNG</h3>
+                        <div class="section-badge">Mới</div>
+                    </div>
+                    <div class="box-input-grid">
+                        <input type="text" id="boxTypeName" placeholder="Tên thùng" class="modern-input full">
+                        <div class="dimension-group">
+                            <div class="dimension-card">
+                                <label>Rộng</label>
+                                <input type="number" id="boxWidth" value="60" class="modern-input">
+                            </div>
+                            <div class="dimension-card">
+                                <label>Cao</label>
+                                <input type="number" id="boxHeight" value="50" class="modern-input">
+                            </div>
+                            <div class="dimension-card">
+                                <label>Dài</label>
+                                <input type="number" id="boxDepth" value="80" class="modern-input">
+                            </div>
+                        </div>
+                        <div class="dimension-group">
+                            <div class="dimension-card">
+                                <label>Trọng lượng</label>
+                                <input type="number" id="boxWeight" value="20" class="modern-input">
+                                <span class="unit">kg</span>
+                            </div>
+                            <div class="dimension-card">
+                                <label>Số lượng</label>
+                                <input type="number" id="boxQuantity" value="1" min="1" class="modern-input">
+                            </div>
+                        </div>
+                        <div class="checkbox-group-modern">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="fixedOrientation">
+                                <span class="checkbox-custom"></span>
+                                🔒 Hướng cố định
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="fragile">
+                                <span class="checkbox-custom"></span>
+                                ⚠️ Dễ vỡ
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="hazardous">
+                                <span class="checkbox-custom"></span>
+                                ☠️ Nguy hiểm
+                            </label>
+                            <select id="boxCategory" class="modern-select mini">
+                                <option value="normal">Hàng thường</option>
+                                <option value="fragile">Dễ vỡ</option>
+                                <option value="heavy">Hàng nặng</option>
+                                <option value="liquid">Hàng lỏng</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="addBoxType" class="btn-primary-modern full">
+                        <span>➕</span> Thêm loại thùng
+                    </button>
+                    <div id="boxTypeList" class="box-type-list-modern"></div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <div class="section-icon">⚡</div>
+                        <h3>THAO TÁC NHANH</h3>
+                    </div>
+                    <div class="quick-actions">
+                        <button id="btnAutoOptimize" class="quick-action-btn" title="Tự động sắp xếp (F5)">
+                            <span>🔄</span> Auto
+                        </button>
+                        <button id="btnRandom20" class="quick-action-btn" title="Sinh ngẫu nhiên">
+                            <span>🎲</span> Random
+                        </button>
+                        <button id="btnClear" class="quick-action-btn" title="Xóa tất cả">
+                            <span>🗑️</span> Xóa
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AI Packing Section -->
+                <div class="sidebar-section gradient-bg">
+                    <div class="section-header">
+                        <div class="section-icon">🤖</div>
+                        <h3>AI PACKING</h3>
+                        <div class="section-badge pro">PRO</div>
+                    </div>
+                    <div class="ai-buttons">
+                        <button id="btnAI" class="btn-secondary-modern">
+                            <span>🤖</span> AI Cơ bản
+                        </button>
+                        <button id="btnAIPro" class="btn-pro-modern">
+                            <span>🚀</span> AI Pro (4 chiến lược)
+                        </button>
+                    </div>
+                    <div id="strategyComparison" class="strategy-panel"></div>
+                </div>
+
+                <!-- Analysis Section -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <div class="section-icon">📊</div>
+                        <h3>PHÂN TÍCH</h3>
+                    </div>
+                    <button id="optimizeBtn" class="btn-outline-modern full">
+                        <span>🔍</span> So sánh các loại container
+                    </button>
+                    <button id="suggestMaterials" class="btn-outline-modern full">
+                        <span>📦</span> Đề xuất vật liệu chèn lót
+                    </button>
+                    <div id="containerComparison" class="analysis-panel"></div>
+                    <div id="materialSuggestions" class="analysis-panel"></div>
+                </div>
+
+                <!-- Tools Section -->
+                <div class="sidebar-section">
+                    <div class="section-header">
+                        <div class="section-icon">🛠️</div>
+                        <h3>CÔNG CỤ</h3>
+                    </div>
+                    <div class="toolbar">
+                        <button id="btnUndo" class="tool-btn" title="Hoàn tác (Ctrl+Z)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                        </button>
+                        <button id="btnRedo" class="tool-btn" title="Làm lại (Ctrl+Y)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+                        </button>
+                        <button id="btnSave" class="tool-btn" title="Lưu dự án (Ctrl+S)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        </button>
+                        <button id="btnLoad" class="tool-btn" title="Tải dự án">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        </button>
+                    </div>
+                    <div class="toolbar">
+                        <button id="btnModeMove" class="tool-btn active" title="Di chuyển (T)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l-3 3-3-3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/></svg>
+                        </button>
+                        <button id="btnModeRotate" class="tool-btn" title="Xoay (R)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                        <button id="btnResetView" class="tool-btn" title="Reset camera">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M22 12c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10z"/></svg>
+                        </button>
+                    </div>
+                    <div class="toolbar">
+                        <button id="viewTop" class="tool-btn" title="Nhìn từ trên">⬇️</button>
+                        <button id="viewFront" class="tool-btn" title="Nhìn từ trước">⬅️</button>
+                        <button id="viewSide" class="tool-btn" title="Nhìn từ bên">➡️</button>
+                        <button id="viewIsometric" class="tool-btn" title="Góc isometric">🎯</button>
+                    </div>
+                    <div class="toolbar">
+                        <button id="exportPDF" class="tool-btn" title="Xuất PDF">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        </button>
+                        <button id="exportCSV" class="tool-btn" title="Xuất CSV">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                        </button>
+                    </div>
+                    <!-- Thêm nút toggle mới -->
+                    <div class="toolbar">
+                        <button id="toggleLabels" class="tool-btn" title="Bật/tắt nhãn thùng">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                        <button id="toggleInfoPanel" class="info-toggle-btn active" title="Hiển thị thông tin thùng">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <circle cx="12" cy="8" r="0.5" fill="currentColor" stroke="none"></circle>
+                            </svg>
+                        </button>
+                        <button id="toggleColorLegend" class="tool-btn" title="Ẩn/hiện chú thích">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="2" width="20" height="20" rx="2"></rect>
+                                <circle cx="8" cy="8" r="2"></circle>
+                                <circle cx="16" cy="8" r="2"></circle>
+                                <circle cx="8" cy="16" r="2"></circle>
+                                <circle cx="16" cy="16" r="2"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="slider-modern">
+                        <span>🔆 Độ trong suốt</span>
+                        <input type="range" id="opacitySlider" min="0.1" max="0.9" step="0.01" value="0.25">
+                        <span id="opacityValue">25%</span>
+                    </div>
+                </div>
+
+                <!-- Info Panel (có thể ẩn/hiện) -->
+                <div class="sidebar-section" id="infoPanel" style="display:none;">
+                    <div class="section-header">
+                        <div class="section-icon">📋</div>
+                        <h3>THÔNG TIN THÙNG</h3>
+                    </div>
+                    <div id="infoText" class="info-card"></div>
+                </div>
+
+                <!-- Report Panel -->
+                <div id="report" class="report-modern"></div>
+
+                <!-- Guide -->
+                <div class="guide-modern">
+                    <div class="guide-title">📌 HƯỚNG DẪN NHANH</div>
+                    <div class="guide-grid">
+                        <div class="guide-item"><kbd>Click</kbd><span>Chọn thùng</span></div>
+                        <div class="guide-item"><kbd>Kéo thả</kbd><span>Di chuyển tự do</span></div>
+                        <div class="guide-item"><kbd>T / R</kbd><span>Chế độ xoay</span></div>
+                        <div class="guide-item"><kbd>Delete</kbd><span>Xóa thùng</span></div>
+                        <div class="guide-item"><kbd>Ctrl+Z</kbd><span>Hoàn tác</span></div>
+                        <div class="guide-item"><kbd>Ctrl+S</kbd><span>Lưu dự án</span></div>
+                        <div class="guide-item"><kbd>F5</kbd><span>Tự động sắp xếp</span></div>
+                        <div class="guide-item"><kbd>Ctrl+D</kbd><span>Nhân bản thùng</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3D Canvas -->
+        <div id="canvas"></div>
+    </div>
+
+    <div id="notification-container"></div>
+
+    <!-- Các phần tử mới (thêm vào cuối body) -->
+    <div class="quick-stats" id="quickStats">
+        <div class="quick-stat">
+            <span class="quick-stat-value" id="quickBoxCount">0</span>
+            <span class="quick-stat-label">Thùng</span>
+        </div>
+        <div class="quick-stat">
+            <span class="quick-stat-value" id="quickVolume">0</span>
+            <span class="quick-stat-label">% Thể tích</span>
+        </div>
+        <div class="quick-stat">
+            <span class="quick-stat-value" id="quickWeight">0</span>
+            <span class="quick-stat-label">kg</span>
+        </div>
+    </div>
+
+    <div class="color-legend" id="colorLegend">
+        <div class="legend-item"><div class="legend-color normal"></div><span>Thường</span></div>
+        <div class="legend-item"><div class="legend-color fragile"></div><span>Dễ vỡ</span></div>
+        <div class="legend-item"><div class="legend-color heavy"></div><span>Nặng</span></div>
+        <div class="legend-item"><div class="legend-color selected"></div><span>Đã chọn</span></div>
+    </div>
+
+    <div class="fab" id="fab">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+    </div>
+
+    <div class="fab-menu" id="fabMenu">
+        <div class="fab-item" id="fabQuickAdd" title="Thêm nhanh">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+        </div>
+        <div class="fab-item" id="fabClearAll" title="Xóa tất cả">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+        </div>
+        <div class="fab-item" id="fabSmartPack" title="Xếp thông minh">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                <path d="M8 7v10M16 7v10M7 8h10M7 16h10"></path>
+            </svg>
+        </div>
+    </div>
+
+    <div class="quick-add-panel" id="quickAddPanel">
+        <div class="quick-add-title">📦 Thêm nhanh thùng hàng</div>
+        <div id="quickAddList"></div>
+    </div>
+
+    <div class="selection-info-bar" id="selectionInfoBar">
+        <span class="selection-info-text" id="selectionInfoText">Đã chọn 1 thùng</span>
+        <div class="selection-info-actions">
+            <button class="selection-action" id="selectionMoveUp">⬆️ Lên</button>
+            <button class="selection-action" id="selectionMoveDown">⬇️ Xuống</button>
+            <button class="selection-action" id="selectionDelete">🗑️ Xóa</button>
+            <button class="selection-action" id="selectionCenter">🎯 Xem</button>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
