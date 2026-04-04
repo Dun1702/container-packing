@@ -332,18 +332,31 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
             syncCargoSpaceActions(activeKey);
         }
 
-        function syncContainerInputs() {
+function syncContainerInputs() {
             const cw = document.getElementById('cw');
             const ch = document.getElementById('ch');
             const cd = document.getElementById('cd');
+            const maxLoadInput = document.getElementById('maxLoadWeight');
+            const maxLoadDisplay = document.getElementById('maxLoad');
             const contSelect = document.getElementById('contType');
             if (cw) cw.value = currentContainer.w;
             if (ch) ch.value = currentContainer.h;
             if (cd) cd.value = currentContainer.d;
+            if (maxLoadInput) maxLoadInput.value = currentContainer.maxLoad;
+            if (maxLoadDisplay) maxLoadDisplay.textContent = currentContainer.maxLoad.toLocaleString();
             if (contSelect && currentContainer.code) contSelect.value = currentContainer.code;
+            updateContainerVolume();
         }
 
-        function applyCargoSpaceToState(spaceKey, options = {}) {
+        function updateContainerVolume() {
+            const volumeCm3 = currentContainer.w * currentContainer.h * currentContainer.d;
+            const volumeM3 = (volumeCm3 / 1000000).toFixed(2);
+            const elem = document.getElementById('containerVolume');
+            if (elem) elem.textContent = volumeM3;
+            return volumeM3;
+        }
+
+function applyCargoSpaceToState(spaceKey, options = {}) {
             const { silent = false, skipVisuals = false } = options;
             const space = getCargoSpaceByKey(spaceKey);
             if (!space) return;
@@ -355,9 +368,10 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
                 updateContainerVisual();
                 updateStats();
                 updateCOG();
+                updateContainerVolume();
             }
             if (!silent) {
-                showNotification(`Da chuyen cargo space sang ${space.name}`, 'info', 1300);
+                showNotification(`Đã chuyển cargo space sang ${space.name}`, 'info', 1300);
             }
         }
 
@@ -3558,7 +3572,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
         
         function highlightBox(box, highlight) {
             if (highlight) {
-                box.material.emissive = new THREE.Color(0x442200);
+                box.material.emissive = new THREE.Color(0x88ccff);
                 box.children.forEach(child => {
                     if (child.isCSS2DObject) {
                         child.element.style.borderLeft = '3px solid #f59e0b';
@@ -3842,7 +3856,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
             const bbMin = boxBounds.min, bbMax = boxBounds.max;
             if (bbMax.x > maxX || bbMin.x < minX || bbMax.z > maxZ || bbMin.z < minZ || bbMax.y > yLimit || bbMin.y < 0) {
                 hasCollision = true;
-                box.material.emissive = new THREE.Color(0x442200);
+                box.material.emissive = new THREE.Color(0x88ccff);
                 showNotification('Thùng nằm ngoài biên (overhang vượt giới hạn)', 'warning', 1500);
             } else {
                 // Check collision with other boxes
@@ -3851,7 +3865,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
                     const otherBounds = new THREE.Box3().setFromObject(other);
                     if (boxBounds.intersectsBox(otherBounds)) {
                         hasCollision = true;
-                        box.material.emissive = new THREE.Color(0x442200);
+                        box.material.emissive = new THREE.Color(0x88ccff);
                         showNotification('Thùng va chạm với thùng khác!', 'warning', 1500);
                         break;
                     }
@@ -3930,11 +3944,11 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
             const weight = Number(boxType.weight) || 0;
             
             // Màu sắc tươi sáng hơn
-            const categoryColors = {
-                normal: 0x3b82f6,
-                fragile: 0xef4444,
-                heavy: 0x10b981,
-                liquid: 0x06b6d4
+const categoryColors = {
+                normal: 0x60a5fa,
+                fragile: 0xf87171,
+                heavy: 0x22c55e,
+                liquid: 0x0891b2
             };
             const baseColor = categoryColors[boxType.category] || 0x3b82f6;
             
@@ -3952,7 +3966,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             // Pattern sáng
-            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+ctx.fillStyle = 'rgba(255,255,255,0.3)';
             for (let i = 0; i < 10; i++) {
                 ctx.fillRect(i * 50, 0, 25, canvas.height);
                 ctx.fillRect(0, i * 50, canvas.width, 25);
@@ -3980,12 +3994,12 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
             }
             
             const texture = new THREE.CanvasTexture(canvas);
-            const material = new THREE.MeshStandardMaterial({ 
+const material = new THREE.MeshStandardMaterial({ 
                 map: texture, 
-                roughness: 0.4, 
-                metalness: 0.1,
+                roughness: 0.3, 
+                metalness: 0.12,
                 emissive: new THREE.Color(baseColor),
-                emissiveIntensity: 0.1
+                emissiveIntensity: 0.22
             });
             const geometry = new THREE.BoxGeometry(w, h, d);
             const mesh = new THREE.Mesh(geometry, material);
@@ -5964,7 +5978,104 @@ createBoxLabel(box, {
                     input.click();
                 };
             }
-            const btnImportExcel = document.getElementById('btnImportExcel');
+// ✅ EXCEL DRAG-DROP IMPORT UPGRADE
+async function setupExcelImport() {
+  const dropZone = document.getElementById('excelDropZone');
+  const fileInput = document.getElementById('excelFileInput');
+  const browseBtn = document.getElementById('excelBrowseBtn');
+  
+  if (!dropZone || !fileInput || !browseBtn) return;
+  
+  // Click to browse
+  browseBtn.onclick = () => fileInput.click();
+  dropZone.onclick = (e) => {
+    if (!dropZone.classList.contains('dragover')) fileInput.click();
+  };
+  
+  // File input change
+  fileInput.onchange = (e) => importExcelFile(e.target.files[0]);
+  
+  // Drag events
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+  });
+  
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+  });
+  
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+  });
+  
+  dropZone.ondrop = (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file && (file.name.match(/\\.xlsx?$/i))) {
+      importExcelFile(file);
+    } else {
+      showNotification('Chỉ hỗ trợ file Excel (.xlsx, .xls)', 'warning');
+    }
+  };
+}
+
+// Enhanced Excel import
+async function importExcelFile(file) {
+  if (!file) return;
+  
+  showNotification('Đang đọc file Excel...', 'info');
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    const res = await fetch('/api/import/excel', {
+      method: 'POST',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      body: formData
+    });
+    
+    const data = await res.json();
+    
+    if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+      // Clear existing and add imported
+      boxTypes = data.data.map((row, index) => ({
+        name: row.name || `Thùng ${index + 1}`,
+        width: Number(row.width) || 60,
+        height: Number(row.height) || 50,
+        depth: Number(row.depth) || 80,
+        weight: Number(row.weight) || 20,
+        quantity: Math.max(1, Number(row.quantity) || 1),
+        destination: row.destination || '',
+        group: row.group || 'Nhóm 1',
+        priority: Number(row.priority) || 3,
+        sku: row.sku || `EXCEL-${Date.now()}-${index}`,
+        category: row.category || 'normal',
+        stackable: row.stackable !== false,
+        tiltable: row.tiltable !== false,
+        rotatable: row.rotatable !== false
+      }));
+      
+      updateBoxTypeList();
+      refreshProfessionalPanels();
+      updateStats();
+      showNotification(`✅ Import thành công ${data.data.length} thùng từ Excel!`, 'success', 4000);
+    } else {
+      showNotification(data.message || 'Import thất bại - kiểm tra định dạng Excel', 'error');
+    }
+  } catch (err) {
+    console.error('Excel import error:', err);
+    showNotification('❌ Lỗi server. Thử template Excel hoặc kiểm tra kết nối.', 'error');
+  }
+}
+
+// Init Excel import on DOM ready (add to existing DOMContentLoaded)
+setupExcelImport();
             if (btnImportExcel) {
                 btnImportExcel.onclick = () => {
                     const input = document.createElement('input');
