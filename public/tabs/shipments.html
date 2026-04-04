@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Các lô hàng - Container Packing Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: linear-gradient(135deg, #eef3f9 0%, #e8edf4 100%);
+            color: #0f172a;
+            padding: 24px;
+            min-height: 100vh;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 32px; 
+            padding-bottom: 24px;
+            border-bottom: 2px solid rgba(37,99,235,0.1);
+        }
+        .header h1 { 
+            font-size: 28px; 
+            font-weight: 700; 
+            background: linear-gradient(135deg, #1f6feb, #2563eb); 
+            -webkit-background-clip: text; 
+            background-clip: text; 
+            color: transparent;
+        }
+        .actions { display: flex; gap: 12px; }
+        .btn { 
+            padding: 12px 24px; 
+            border-radius: 12px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            border: none; 
+            transition: all 0.2s ease; 
+            font-size: 14px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+        }
+        .btn-primary { background: linear-gradient(135deg, #1f6feb, #2563eb); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(31,111,235,0.3); }
+        .btn-secondary { background: white; color: #2563eb; border: 2px solid #e2e8f0; }
+        .btn-secondary:hover { background: #f8fafc; }
+        .grid-header { 
+            background: white; 
+            border-radius: 16px 16px 0 0; 
+            padding: 20px 24px; 
+            display: grid; 
+            grid-template-columns: 220px 200px 120px 140px 150px 150px 100px 80px; 
+            gap: 20px; 
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .grid-header span { 
+            font-weight: 600; 
+            color: #374151; 
+            font-size: 14px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
+        .grid-row { 
+            background: white; 
+            padding: 20px 24px; 
+            display: grid; 
+            grid-template-columns: 220px 200px 120px 140px 150px 150px 100px 80px; 
+            gap: 20px; 
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
+        }
+        .grid-row:hover { background: #f8fafc; transform: translateX(4px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+        .shipment-name { font-weight: 600; color: #1f2937; }
+        .shipment-name:hover { color: #2563eb; }
+        .storage-name { color: #64748b; font-size: 14px; }
+        .version-tag { 
+            background: #dbeafe; 
+            color: #1e40af; 
+            padding: 4px 8px; 
+            border-radius: 20px; 
+            font-size: 12px; 
+            font-weight: 600;
+        }
+        .date-cell { 
+            color: #64748b; 
+            font-size: 13px; 
+            text-align: center;
+        }
+        .user-name { 
+            background: linear-gradient(135deg, #10b981, #059669); 
+            color: white; 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 12px; 
+            font-weight: 600;
+        }
+        .action-cell { display: flex; gap: 8px; }
+        .action-btn { 
+            width: 36px; 
+            height: 36px; 
+            border-radius: 10px; 
+            border: none; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 16px; 
+            transition: all 0.2s ease;
+        }
+        .action-btn:hover { transform: scale(1.1); }
+        .btn-edit { background: #3b82f6; color: white; }
+        .btn-copy { background: #10b981; color: white; }
+        .btn-delete { background: #ef4444; color: white; }
+        .empty-state { 
+            grid-column: 1 / -1; 
+            text-align: center; 
+            padding: 60px 40px; 
+            color: #64748b; 
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 20px;
+            margin-top: 40px;
+        }
+        .empty-icon { font-size: 64px; margin-bottom: 20px; opacity: 0.5; }
+        .filter-section { 
+            background: white; 
+            border-radius: 16px; 
+            padding: 24px; 
+            margin-bottom: 24px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .filter-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+        .filter-group { display: flex; gap: 8px; align-items: center; }
+        .filter-input { 
+            padding: 12px 16px; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 12px; 
+            font-size: 14px; 
+            transition: all 0.2s ease;
+        }
+        .filter-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .filter-btn { 
+            padding: 12px 20px; 
+            border-radius: 12px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            border: none; 
+            background: #f1f5f9; 
+            color: #64748b; 
+            transition: all 0.2s ease;
+        }
+        .filter-btn.active, .filter-btn:hover { background: #3b82f6; color: white; }
+        .import-section { 
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe); 
+            border: 2px dashed #0ea5e9; 
+            border-radius: 20px; 
+            padding: 32px; 
+            text-align: center; 
+            margin: 24px 0; 
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .import-section.dragover { 
+            border-color: #0284c7; 
+            background: linear-gradient(135deg, #e0f2fe, #bae6fd); 
+            transform: scale(1.02);
+        }
+        .import-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.8; }
+        .import-title { font-size: 24px; font-weight: 700; color: #0369a1; margin-bottom: 8px; }
+        .import-subtitle { color: #0c4a6e; font-size: 16px; }
+        .stats-row { display: flex; gap: 24px; margin-top: 24px; }
+        .stat-card { 
+            flex: 1; 
+            background: white; 
+            padding: 24px; 
+            border-radius: 16px; 
+            text-align: center; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .stat-value { font-size: 32px; font-weight: 700; color: #1f2937; margin-bottom: 8px; }
+        .stat-label { color: #64748b; font-size: 14px; font-weight: 500; }
+        @media (max-width: 768px) {
+            .header, .grid-header, .grid-row { 
+                grid-template-columns: 1fr; 
+                gap: 12px; 
+            }
+            .actions { flex-direction: column; }
+            .filter-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Các lô hàng và Báo cáo</h1>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="openImportModal()">
+                    <span>📊</span>Nhập Excel
+                </button>
+                <button class="btn btn-secondary" onclick="refreshShipments()">
+                    🔄 Làm mới
+                </button>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <input type="text" class="filter-input" id="shipmentFilter" placeholder="Tìm tên lô hàng..." oninput="filterShipments()">
+                </div>
+                <div class="filter-group">
+                    <input type="text" class="filter-input" id="storageFilter" placeholder="Tìm phương tiện..." oninput="filterShipments()">
+                </div>
+                <div class="filter-group">
+                    <button class="filter-btn active" onclick="filterShipments('all')">Tất cả</button>
+                    <button class="filter-btn" onclick="filterShipments('today')">Hôm nay</button>
+                    <button class="filter-btn" onclick="filterShipments('week')">Tuần</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-header">
+            <span>Tên lô hàng</span>
+            <span>Phương tiện</span>
+            <span>Phiên bản</span>
+            <span>Ngày tạo</span>
+            <span>Người tạo</span>
+            <span>Hiệu suất</span>
+            <span>Thể tích</span>
+            <span>Hành động</span>
+        </div>
+        <div id="shipmentsGrid">
+            <div class="empty-state">
+                <div class="empty-icon">📦</div>
+                <h3>Chưa có lô hàng nào</h3>
+                <p>Bắt đầu bằng cách nhập Excel hoặc tạo lô hàng mới từ Load Desk</p>
+                <div style="margin-top: 24px;">
+                    <button class="btn btn-primary" onclick="openImportModal()">
+                        📊 Nhập hàng từ Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-value" id="statTotalShipments">0</div>
+                <div class="stat-label">Tổng lô hàng</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statTodayShipments">0</div>
+                <div class="stat-label">Hôm nay</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statTotalVolume">0 m³</div>
+                <div class="stat-label">Thể tích đã xếp</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statTotalWeight">0 kg</div>
+                <div class="stat-label">Tải trọng</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nhập hàng từ Excel</h2>
+                <p>Kéo thả file Excel hoặc click chọn</p>
+            </div>
+            <div class="import-section" id="excelDropZoneModal">
+                <svg viewBox="0 0 48 48" style="width:64px;height:64px;margin-bottom:16px;color:#3b82f6">
+                    <path fill="currentColor" d="M24 4C12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20S35.05 4 24 4zm-1 32h-2v-6h-6v-2h6v-6h2v6h6v2h-6v6zm3-16h-12v-2h12v2z"/>
+                </svg>
+                <div style="font-size:18px;font-weight:600;color:#1e40af;margin-bottom:8px">📊 Kéo thả Excel file</div>
+                <div style="color:#64748b">*.xlsx, *.xls - Tự động nhận dạng cột L/D/W/H/Weight/Qty/Destination</div>
+                <input type="file" id="excelModalInput" accept=".xlsx,.xls" style="display:none">
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeImportModal()" style="background:none;color:#64748b;border:1px solid #e2e8f0;padding:12px 24px;border-radius:8px;cursor:pointer">Hủy</button>
+                <button id="processExcelBtn" onclick="processExcelFile()" style="background:#3b82f6;color:white;padding:12px 24px;border-radius:8px;border:none;cursor:pointer;font-weight:600">Xử lý file</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Demo shipments data (matching EasyCargo structure)
+        let shipments = [
+            {
+                id: '1',
+                name: 'EXP-0402-HCM-HP',
+                storageName: '40HC 002-EXP',
+                version: 'v1.3 (AI Pro)',
+                created: '04/04/2026 13:05',
+                createdBy: 'Luong Tien Dung',
+                efficiency: '94.2%',
+                volume: '67.8/72.1 m³'
+            },
+            {
+                id: '2',
+                name: 'RFR-0401-Cold Chain',
+                storageName: '40RF 001',
+                version: 'v2.0',
+                created: '03/04/2026 22:03',
+                createdBy: 'Luong Tien Dung',
+                efficiency: '87.6%',
+                volume: '45.2/51.8 m³'
+            }
+        ];
+
+        let filteredShipments = [...shipments];
+
+        function refreshShipments() {
+            // Simulate API call
+            document.getElementById('shipmentsGrid').innerHTML = `
+                <div class="grid-row">
+                    <div class="shipment-name" onclick="loadShipment('1')">EXP-0402-HCM-HP</div>
+                    <div class="storage-name">40HC 002-EXP</div>
+                    <div class="version-tag">v1.3 (AI Pro)</div>
+                    <div class="date-cell">04/04/2026</div>
+                    <div class="user-name">Luong Tien Dung</div>
+                    <div style="color:#10b981;font-weight:600">94.2%</div>
+                    <div>67.8/72.1 m³</div>
+                    <div class="action-cell">
+                        <button class="action-btn btn-edit" onclick="loadShipment('1')">✎</button>
+                        <button class="action-btn btn-copy" onclick="copyShipment('1')">📋</button>
+                        <button class="action-btn btn-delete" onclick="deleteShipment('1')">🗑️</button>
+                    </div>
+                </div>
+                <div class="grid-row">
+                    <div class="shipment-name" onclick="loadShipment('2')">RFR-0401-Cold Chain</div>
+                    <div class="storage-name">40RF 001</div>
+                    <div class="version-tag">v2.0</div>
+                    <div class="date-cell">03/04/2026</div>
+                    <div class="user-name">Luong Tien Dung</div>
+                    <div style="color:#f59e0b;font-weight:600">87.6%</div>
+                    <div>45.2/51.8 m³</div>
+                    <div class="action-cell">
+                        <button class="action-btn btn-edit" onclick="loadShipment('2')">✎</button>
+                        <button class="action-btn btn-copy" onclick="copyShipment('2')">📋</button>
+                        <button class="action-btn btn-delete" onclick="deleteShipment('2')">🗑️</button>
+                    </div>
+                </div>
+            `;
+            updateStats();
+        }
+
+        function filterShipments(filter = 'all') {
+            // Implement filter logic
+            refreshShipments();
+        }
+
+        function openImportModal() {
+            document.getElementById('importModal').style.display = 'flex';
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').style.display = 'none';
+        }
+
+        function processExcelFile() {
+            const fileInput = document.getElementById('excelModalInput');
+            if (!fileInput.files.length) {
+                alert('Chọn file Excel trước');
+                return;
+            }
+            showNotification('Đã xử lý Excel thành công!', 'success');
+            closeImportModal();
+            refreshShipments();
+        }
+
+        function loadShipment(id) {
+            showNotification(`Đã load lô hàng ${id}`, 'success');
+            // Switch to 3D packing tab with shipment data
+        }
+
+        function copyShipment(id) {
+            showNotification(`Đã copy lô hàng ${id}`, 'success');
+        }
+
+        function deleteShipment(id) {
+            if (confirm('Xóa lô hàng này?')) {
+                showNotification(`Đã xóa lô hàng ${id}`, 'success');
+                refreshShipments();
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('statTotalShipments').textContent = shipments.length;
+            document.getElementById('statTodayShipments').textContent = shipments.filter(s => s.created.startsWith('04/04/2026')).length;
+            document.getElementById('statTotalVolume').textContent = '1,234 m³';
+            document.getElementById('statTotalWeight').textContent = '456,789 kg';
+        }
+
+        // Event listeners
+        document.getElementById('excelDropZoneModal').onclick = () => {
+            document.getElementById('excelModalInput').click();
+        };
+
+        document.getElementById('excelModalInput').onchange = (e) => {
+            processExcelFile();
+        };
+
+        // Drag drop handlers
+        const dropZone = document.getElementById('excelDropZoneModal');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('dragover');
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                document.getElementById('excelModalInput').files = files;
+                processExcelFile();
+            }
+        }
+
+        // Initialize
+        refreshShipments();
+        updateStats();
+    </script>
+</body>
+</html>

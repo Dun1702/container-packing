@@ -1,8 +1,13 @@
-/* style.css - Cập nhật màu sắc dễ nhìn hơn */
+/* Container Packing Pro v2.0 - CLEAN EASY CARGO LAYOUT */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+html, body {
+    height: 100vh;
+    overflow: hidden;
 }
 
 /* Thay đổi màu nền và giao diện sáng hơn */
@@ -41,6 +46,7 @@ body {
         linear-gradient(135deg, #eef3f9 0%, #e8edf4 42%, #f5f7fb 100%);
     color: var(--dark);
     overflow: hidden;
+    scroll-behavior: smooth;
 }
 
 /* Canvas background sáng */
@@ -1278,6 +1284,11 @@ body {
     background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
     position: relative;
     overflow: hidden;
+    cursor: grab;
+}
+
+#canvas:active {
+    cursor: grabbing;
 }
 
 /* Scrollbar */

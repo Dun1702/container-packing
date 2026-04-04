@@ -342,18 +342,41 @@ function syncContainerInputs() {
             if (cw) cw.value = currentContainer.w;
             if (ch) ch.value = currentContainer.h;
             if (cd) cd.value = currentContainer.d;
-            if (maxLoadInput) maxLoadInput.value = currentContainer.maxLoad;
+            if (maxLoadInput) {
+                maxLoadInput.value = currentContainer.maxLoad;
+                maxLoadInput.onchange = (e) => {
+                    currentContainer.maxLoad = Number(e.target.value) || 29500;
+                    maxLoadDisplay.textContent = currentContainer.maxLoad.toLocaleString();
+                    updateStats();
+                };
+            }
             if (maxLoadDisplay) maxLoadDisplay.textContent = currentContainer.maxLoad.toLocaleString();
             if (contSelect && currentContainer.code) contSelect.value = currentContainer.code;
             updateContainerVolume();
         }
 
-        function updateContainerVolume() {
+function updateContainerVolume() {
             const volumeCm3 = currentContainer.w * currentContainer.h * currentContainer.d;
             const volumeM3 = (volumeCm3 / 1000000).toFixed(2);
             const elem = document.getElementById('containerVolume');
             if (elem) elem.textContent = volumeM3;
             return volumeM3;
+        }
+
+        // Thêm event listener cho dimension inputs
+        function setupDimensionListeners() {
+            const dims = ['cw', 'ch', 'cd'];
+            dims.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.onchange = input.oninput = (e) => {
+                        currentContainer[id[0] === 'c' ? id.slice(1) : id] = Number(e.target.value) || 0;
+                        updateContainerVolume();
+                        updateContainerVisual();
+                        updateStats();
+                    };
+                }
+            });
         }
 
 function applyCargoSpaceToState(spaceKey, options = {}) {
