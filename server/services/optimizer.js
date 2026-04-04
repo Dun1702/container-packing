@@ -15,6 +15,22 @@ const defaultConstraints = {
   populationSize: 80
 };
 
+function expandItems(items = []) {
+  const expanded = [];
+  items.forEach((item, index) => {
+    const quantity = Math.max(1, Number(item.quantity) || 1);
+    for (let i = 0; i < quantity; i += 1) {
+      expanded.push({
+        ...item,
+        quantity: 1,
+        name: quantity > 1 ? `${item.name || 'Box'} #${i + 1}` : item.name,
+        _originalIndex: index
+      });
+    }
+  });
+  return expanded;
+}
+
 function getRotations(item) {
   const base = [
     { w: item.width, h: item.height, d: item.depth },
@@ -24,6 +40,8 @@ function getRotations(item) {
     { w: item.depth, h: item.width, d: item.height },
     { w: item.depth, h: item.height, d: item.width }
   ];
+  // If orientation is fixed this item must preserve its declared dimensions
+  if (item.fixedOrientation === true) return [base[0]];
   // If rotatable=false -> only keep original orientation
   if (item.rotatable === false) return [base[0]];
   // If tiltable=false -> keep orientations where height stays item.height
@@ -184,7 +202,8 @@ function findPosition(dims, placed, item, container, grid, target, options = {})
   return best;
 }
 
-function fitness(solution, container, constraints) {
+function fitness(solution, container, constraints, totalItems = solution.boxes.length) {
+  const placementRatio = totalItems > 0 ? solution.boxes.length / totalItems : 1;
   const volumeUtil = solution.usedVolume / (container.width * container.height * container.depth);
   const weightUtil = solution.usedWeight / (container.maxLoad || Number.MAX_SAFE_INTEGER);
   const cog = computeCOG(solution.boxes, container);
@@ -193,14 +212,15 @@ function fitness(solution, container, constraints) {
 
   const weights = { ...defaultConstraints.weights, ...(constraints.weights || {}) };
   const overall =
-    volumeUtil * weights.volume +
+    (volumeUtil * weights.volume +
     weightUtil * weights.weight +
     stability * weights.stability +
     (solution.boxes.length ? 1 : 0) * weights.priority +
     cog.balanceScore * weights.balance +
-    axle.score * weights.axle;
+    axle.score * weights.axle) * Math.pow(placementRatio, 1.2);
 
   return {
+    placementRatio,
     volume: volumeUtil,
     weight: weightUtil,
     stability,
@@ -500,30 +520,33 @@ function optimizeSingle(items, containerInput, constraintsInput = {}) {
   };
   const start = Date.now();
 
-  const ruleDrivenPlan = buildConstraintAwarePlan(items, container, constraints);
-  if (ruleDrivenPlan.boxes.length) {
-    const bestFitness = fitness(ruleDrivenPlan, container, constraints);
-    const cog = computeCOG(ruleDrivenPlan.boxes, container);
+  const expandedItems = expandItems(items);
+  const itemCount = expandedItems.length;
+  const ruleDrivenPlan = buildConstraintAwarePlan(expandedItems, container, constraints);
+  const ruleFitness = fitness(ruleDrivenPlan, container, constraints, itemCount);
+  const ruleSolution = {
+    ...ruleDrivenPlan,
+    stats: {
+      executionTime: Date.now() - start,
+      iterations: 1,
+      populationSize: itemCount,
+      mode: 'rule-driven'
+    },
+    fitness: ruleFitness,
+    cog: computeCOG(ruleDrivenPlan.boxes, container),
+    axle: ruleFitness.axleData
+  };
+
+  if (itemCount <= 4 || constraints.enableGenetic === false) {
     return {
-      bestSolution: {
-        ...ruleDrivenPlan,
-        stats: {
-          executionTime: Date.now() - start,
-          iterations: 1,
-          populationSize: items.length,
-          mode: 'rule-driven'
-        },
-        fitness: bestFitness,
-        cog,
-        axle: bestFitness.axleData
-      },
+      bestSolution: ruleSolution,
       solutions: [
         {
-          fitness: bestFitness,
+          fitness: ruleFitness,
           boxes: ruleDrivenPlan.boxes,
           stepPlan: ruleDrivenPlan.stepPlan,
-          cog,
-          axle: bestFitness.axleData
+          cog: ruleSolution.cog,
+          axle: ruleFitness.axleData
         }
       ]
     };
@@ -533,13 +556,13 @@ function optimizeSingle(items, containerInput, constraintsInput = {}) {
   const generations = constraints.maxGenerations;
   const mutationRate = 0.12;
 
-  let population = Array.from({ length: populationSize }, () => randomIndividual(items, container));
+  let population = Array.from({ length: populationSize }, () => randomIndividual(expandedItems, container));
   let best = null;
 
   for (let g = 0; g < generations; g++) {
     const scored = population.map((ind) => {
-      const solution = decodeIndividual(ind, items, container, constraints);
-      const fit = fitness(solution, container, constraints);
+      const solution = decodeIndividual(ind, expandedItems, container, constraints);
+      const fit = fitness(solution, container, constraints, itemCount);
       return { ind, solution, fit };
     });
 
@@ -552,49 +575,71 @@ function optimizeSingle(items, containerInput, constraintsInput = {}) {
     while (nextPop.length < populationSize) {
       const p1 = elites[Math.floor(Math.random() * elites.length)];
       const p2 = scored[Math.floor(Math.random() * scored.length)].ind;
-      const child = crossover(p1, p2, items.length);
-      mutate(child, mutationRate, container, items);
+      const child = crossover(p1, p2, expandedItems.length);
+      mutate(child, mutationRate, container, expandedItems);
       nextPop.push(child);
     }
     population = nextPop;
   }
 
-  const decodedBest = decodeIndividual(best.ind, items, container, constraints);
-  const bestFitness = fitness(decodedBest, container, constraints);
+  const decodedBest = decodeIndividual(best.ind, expandedItems, container, constraints);
+  const bestFitness = fitness(decodedBest, container, constraints, itemCount);
   const cog = computeCOG(decodedBest.boxes, container);
 
-  return {
-    bestSolution: {
-      ...decodedBest,
-      stats: {
-        executionTime: Date.now() - start,
-        iterations: generations,
-        populationSize,
-        mode: 'genetic'
-      },
+  const geneticSolution = {
+    ...decodedBest,
+    stats: {
+      executionTime: Date.now() - start,
+      iterations: generations,
+      populationSize,
+      mode: 'genetic'
+    },
+    fitness: bestFitness,
+    cog,
+    axle: bestFitness.axleData
+  };
+
+  const bestSolution = bestFitness.overall >= ruleFitness.overall ? geneticSolution : ruleSolution;
+  const solutions = [
+    {
+      fitness: ruleFitness,
+      boxes: ruleDrivenPlan.boxes,
+      stepPlan: ruleDrivenPlan.stepPlan,
+      cog: ruleSolution.cog,
+      axle: ruleFitness.axleData
+    },
+    {
       fitness: bestFitness,
+      boxes: decodedBest.boxes,
+      stepPlan: decodedBest.stepPlan,
       cog,
       axle: bestFitness.axleData
-    },
-    solutions: [
-      {
-        fitness: bestFitness,
-        boxes: decodedBest.boxes,
-        stepPlan: decodedBest.stepPlan,
-        cog,
-        axle: bestFitness.axleData
-      }
-    ]
+    }
+  ];
+
+  return {
+    bestSolution,
+    solutions
   };
 }
 
 function optimizeMulti(items = [], containers = [], constraints = {}) {
   if (!containers.length) return optimizeSingle(items, {}, constraints);
+  const expandedItems = expandItems(items);
+  const totalItemVolume = expandedItems.reduce((sum, item) => sum + (item.width || 0) * (item.height || 0) * (item.depth || 0), 0);
+  const totalItemWeight = expandedItems.reduce((sum, item) => sum + (item.weight || 0), 0);
+
   const results = containers.map((ct) => {
     const run = optimizeSingle(items, ct, constraints);
     const containerVolume = (ct.width || ct.w) * (ct.height || ct.h) * (ct.depth || ct.d);
-    const utilization = run.bestSolution.usedVolume / containerVolume;
-    const neededContainers = Math.ceil(1 / Math.max(utilization, 0.0001));
+    const utilization = run.bestSolution.usedVolume / Math.max(containerVolume, 1);
+    const weightRatio = totalItemWeight / Math.max((ct.maxLoad || ct.max_load || 1), 1);
+    const volumeRatio = totalItemVolume / Math.max(containerVolume, 1);
+    const neededContainers = Math.max(
+      Math.ceil(1 / Math.max(utilization, 0.0001)),
+      Math.ceil(weightRatio),
+      Math.ceil(volumeRatio)
+    );
     return {
       container: ct,
       utilization,
